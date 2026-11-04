@@ -140,11 +140,12 @@ class GoogleAuthRepository @Inject constructor(
         val result = try {
             authorizationClient.authorize(authorizationRequest(email)).await()
         } catch (e: ApiException) {
-            if (e.statusCode == CommonStatusCodes.SIGN_IN_REQUIRED) {
-                throw AuthRequiredException(e.message ?: "Sign-in required")
+            // Only known temporary failures are retried. Anything else, such as an account removed
+            // from the phone (status 16), will not fix itself and needs the user.
+            if (e.statusCode in TEMPORARY_STATUS_CODES) {
+                throw IOException("Could not get a Google token (${e.statusCode})", e)
             }
-            // Includes NETWORK_ERROR and temporary Play services failures: both are retryable.
-            throw IOException("Could not get a Google token (${e.statusCode})", e)
+            throw AuthRequiredException(e.message ?: "Google authorization failed")
         }
         if (result.hasResolution()) throw AuthRequiredException()
         return result.accessToken ?: throw AuthRequiredException("Google returned no access token")
@@ -168,5 +169,12 @@ class GoogleAuthRepository @Inject constructor(
         /** Grants access only to files and folders this app creates, not the rest of Drive. */
         const val DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file"
         const val ACCOUNT_TYPE = "com.google"
+        val TEMPORARY_STATUS_CODES = setOf(
+            CommonStatusCodes.NETWORK_ERROR,
+            CommonStatusCodes.INTERNAL_ERROR,
+            CommonStatusCodes.INTERRUPTED,
+            CommonStatusCodes.TIMEOUT,
+            CommonStatusCodes.API_NOT_CONNECTED,
+        )
     }
 }

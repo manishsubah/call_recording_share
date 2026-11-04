@@ -2,7 +2,6 @@ package com.funactivity.ppmr.ui.home
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -184,12 +183,7 @@ private fun SyncSection(state: HomeUiState, onSyncNow: () -> Unit) {
         val lastSync = state.appState.lastSuccessfulSyncAt
         SecondaryText(
             if (lastSync != null) {
-                val time = DateUtils.getRelativeTimeSpanString(
-                    lastSync,
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS,
-                )
-                stringResource(R.string.last_sync_label, time)
+                stringResource(R.string.last_sync_label, relativeTime(lastSync))
             } else {
                 stringResource(R.string.last_sync_never)
             },

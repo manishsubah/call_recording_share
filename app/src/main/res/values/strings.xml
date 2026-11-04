@@ -54,6 +54,7 @@
     <string name="status_uploading">Uploading</string>
     <string name="status_uploaded">Uploaded</string>
     <string name="status_failed">Failed</string>
+    <string name="time_just_now">just now</string>
     <string name="activity_title">Recent activity</string>
     <string name="activity_empty">Nothing synced yet. New recordings will appear here.</string>
     <string name="activity_tap_to_retry">Tap to retry</string>

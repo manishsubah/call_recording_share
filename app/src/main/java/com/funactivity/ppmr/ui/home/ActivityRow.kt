@@ -111,9 +111,13 @@ private fun SyncStatus.labelRes(): Int = when (this) {
     SyncStatus.FAILED -> R.string.status_failed
 }
 
-private fun relativeTime(timestamp: Long): String =
-    DateUtils.getRelativeTimeSpanString(
-        timestamp,
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
+/** Relative time that says "just now" instead of Android's "0 minutes ago". */
+@Composable
+internal fun relativeTime(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    return if (now - timestamp < DateUtils.MINUTE_IN_MILLIS) {
+        stringResource(R.string.time_just_now)
+    } else {
+        DateUtils.getRelativeTimeSpanString(timestamp, now, DateUtils.MINUTE_IN_MILLIS).toString()
+    }
+}
