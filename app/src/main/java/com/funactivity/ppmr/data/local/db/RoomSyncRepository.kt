@@ -104,9 +104,19 @@ class RoomSyncRepository @Inject constructor(
         database.withTransaction { dao.findByStatus(SyncStatus.FAILED).forEach { requeue(it) } }
     }
 
-    override suspend fun forget(identityKey: String) = dao.deleteFile(identityKey)
+    override suspend fun forget(identityKey: String) {
+        database.withTransaction {
+            dao.deleteFile(identityKey)
+            dao.deleteEventsFor(identityKey)
+        }
+    }
 
-    override suspend fun clearUnfinished() = dao.deleteUnfinishedFiles()
+    override suspend fun clearUnfinished() {
+        database.withTransaction {
+            dao.deleteUnfinishedFiles()
+            dao.deleteUnfinishedEvents()
+        }
+    }
 
     override suspend fun clearHistory() {
         // Failed rows go too, so the badge agrees with the now-empty list. Those files are

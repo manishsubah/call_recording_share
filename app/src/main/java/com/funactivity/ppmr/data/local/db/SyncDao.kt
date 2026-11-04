@@ -104,6 +104,9 @@ interface SyncDao {
     )
     suspend fun deleteUnfinishedEvents()
 
+    @Query("DELETE FROM sync_events WHERE identityKey = :identityKey")
+    suspend fun deleteEventsFor(identityKey: String)
+
     @Query("DELETE FROM sync_events")
     suspend fun deleteAllEvents()
 }
