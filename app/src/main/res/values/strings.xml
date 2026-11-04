@@ -29,6 +29,18 @@
     <string name="folder_help_oneplus">OnePlus / OPPO / realme: Music/Recordings/Call Recordings, or Recordings/Call</string>
     <string name="folder_help_outro">Not there? Make a short test call, then browse your Music and Recordings folders for the newest file. Android does not let apps read another app\'s private folder or the top level of storage, so a recorder that saves there has to be changed to save somewhere else.</string>
 
+    <!-- Sync status and activity -->
+    <string name="status_queued">Queued</string>
+    <string name="status_uploading">Uploading</string>
+    <string name="status_uploaded">Uploaded</string>
+    <string name="status_failed">Failed</string>
+    <string name="activity_title">Recent activity</string>
+    <string name="activity_empty">Nothing synced yet. New recordings will appear here.</string>
+    <string name="activity_tap_to_retry">Tap to retry</string>
+    <string name="activity_retry_action">Retry upload</string>
+    <string name="badge_pending">%1$d pending</string>
+    <string name="badge_failed">%1$d failed</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="setting_wifi_only">Upload on Wi-Fi only</string>

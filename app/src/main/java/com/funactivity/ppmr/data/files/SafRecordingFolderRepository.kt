@@ -88,7 +88,10 @@ class SafRecordingFolderRepository @Inject constructor(
                                 pending.addLast(FolderToVisit(row.documentId, folder.depth + 1))
                             }
                         }
-                        AudioFormats.isSupported(row.name) -> files += row.toRecording(tree)
+                        AudioFormats.isSupported(row.name) -> {
+                            val uri = DocumentsContract.buildDocumentUriUsingTree(tree, row.documentId)
+                            files += row.toRecording(uri)
+                        }
                     }
                 }
                 if (!readable && isRoot) {
@@ -143,21 +146,13 @@ class SafRecordingFolderRepository @Inject constructor(
         lastModified = if (isNull(COLUMN_MODIFIED)) 0L else getLong(COLUMN_MODIFIED),
     )
 
-    /** [base] is either the tree URI (listing) or the document URI itself (stat). */
-    private fun Row.toRecording(base: Uri): RecordingFile {
-        val uri = if (DocumentsContract.isDocumentUri(context, base)) {
-            base
-        } else {
-            DocumentsContract.buildDocumentUriUsingTree(base, documentId)
-        }
-        return RecordingFile(
-            documentUri = uri.toString(),
-            displayName = name,
-            size = size,
-            lastModified = lastModified,
-            mimeType = AudioFormats.mimeTypeFor(name, mimeType),
-        )
-    }
+    private fun Row.toRecording(uri: Uri) = RecordingFile(
+        documentUri = uri.toString(),
+        displayName = name,
+        size = size,
+        lastModified = lastModified,
+        mimeType = AudioFormats.mimeTypeFor(name, mimeType),
+    )
 
     private data class FolderToVisit(val documentId: String, val depth: Int)
 

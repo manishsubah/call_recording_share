@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.funactivity.ppmr.domain.model.AppSettings
 import com.funactivity.ppmr.domain.model.AppState
 import com.funactivity.ppmr.domain.model.FolderListing
+import com.funactivity.ppmr.domain.model.SyncItem
 import com.funactivity.ppmr.domain.repository.RecordingFolderRepository
 import com.funactivity.ppmr.domain.repository.SettingsRepository
+import com.funactivity.ppmr.domain.repository.SyncRepository
 import com.funactivity.ppmr.domain.usecase.SelectSourceFolderUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -24,6 +26,7 @@ class HomeViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val folders: RecordingFolderRepository,
     private val selectSourceFolder: SelectSourceFolderUseCase,
+    private val syncRepository: SyncRepository,
 ) : ViewModel() {
 
     val appState: StateFlow<AppState> = settingsRepository.appState
@@ -31,6 +34,9 @@ class HomeViewModel @Inject constructor(
 
     private val _folderStatus = MutableStateFlow<FolderStatus>(FolderStatus.Checking)
     val folderStatus: StateFlow<FolderStatus> = _folderStatus.asStateFlow()
+
+    val recentActivity: StateFlow<List<SyncItem>> = syncRepository.observeRecentActivity(ACTIVITY_LIMIT)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun refreshFolder() {
         viewModelScope.launch {
@@ -53,5 +59,13 @@ class HomeViewModel @Inject constructor(
             selectSourceFolder(uri.toString())
             refreshFolder()
         }
+    }
+
+    fun retry(identityKey: String) {
+        viewModelScope.launch { syncRepository.retry(identityKey) }
+    }
+
+    private companion object {
+        const val ACTIVITY_LIMIT = 20
     }
 }

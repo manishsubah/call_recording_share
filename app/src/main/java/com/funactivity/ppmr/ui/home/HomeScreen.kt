@@ -1,6 +1,8 @@
 package com.funactivity.ppmr.ui.home
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsStateWithLifecycle()
+    val activity by viewModel.recentActivity.collectAsStateWithLifecycle()
     val folderStatus by viewModel.folderStatus.collectAsStateWithLifecycle()
     var showFolderHelp by rememberSaveable { mutableStateOf(false) }
     val pickFolder = rememberFolderPicker(viewModel::onFolderPicked)
@@ -56,12 +59,19 @@ fun HomeScreen(
             )
         },
     ) { padding ->
-        SourceFolderCard(
-            folderName = appState.sourceFolderName,
-            status = folderStatus,
-            onPick = pickFolder,
-            onHelp = { showFolderHelp = true },
-            modifier = Modifier.padding(padding).padding(16.dp),
-        )
+        LazyColumn(contentPadding = padding) {
+            item {
+                SourceFolderCard(
+                    folderName = appState.sourceFolderName,
+                    status = folderStatus,
+                    onPick = pickFolder,
+                    onHelp = { showFolderHelp = true },
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            items(activity, key = { it.identityKey }) { item ->
+                ActivityRow(item, onRetry = viewModel::retry)
+            }
+        }
     }
 }
