@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -16,20 +16,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.funactivity.ppmr.BuildConfig
 import com.funactivity.ppmr.R
 import com.funactivity.ppmr.domain.model.AppSettings
+import com.funactivity.ppmr.ui.common.NotificationPermissionPrompt
+import com.funactivity.ppmr.ui.common.SettingSwitch
+
+private enum class Confirm { CLEAR_HISTORY, DISCONNECT }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +46,25 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val email by viewModel.accountEmail.collectAsStateWithLifecycle()
+    var confirm by rememberSaveable { mutableStateOf<Confirm?>(null) }
+
+    when (confirm) {
+        Confirm.CLEAR_HISTORY -> ConfirmDialog(
+            text = stringResource(R.string.setting_clear_history_confirm),
+            confirmLabel = stringResource(R.string.action_clear),
+            onConfirm = viewModel::clearHistory,
+            onDismiss = { confirm = null },
+        )
+        Confirm.DISCONNECT -> ConfirmDialog(
+            text = stringResource(R.string.setting_disconnect_confirm, email.orEmpty()),
+            confirmLabel = stringResource(R.string.action_disconnect),
+            onConfirm = viewModel::disconnect,
+            onDismiss = { confirm = null },
+        )
+        null -> Unit
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -84,6 +111,40 @@ fun SettingsScreen(
                 onChange = viewModel::setSuccessNotifications,
             )
             MinAgeSetting(settings.minFileAgeSeconds, viewModel::setMinFileAge)
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            SectionTitle(stringResource(R.string.setting_section_data))
+            ActionRow(
+                title = stringResource(R.string.setting_clear_history),
+                summary = stringResource(R.string.setting_clear_history_summary),
+                onClick = { confirm = Confirm.CLEAR_HISTORY },
+            )
+            email?.let {
+                ActionRow(
+                    title = stringResource(R.string.setting_disconnect),
+                    summary = stringResource(R.string.setting_disconnect_summary),
+                    onClick = { confirm = Confirm.DISCONNECT },
+                )
+            }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            SectionTitle(stringResource(R.string.permissions_title))
+            Column(
+                Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                BodyText(stringResource(R.string.permissions_folder))
+                BodyText(stringResource(R.string.permissions_network))
+                BodyText(stringResource(R.string.permissions_notifications))
+                NotificationPermissionPrompt()
+            }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            SectionTitle(stringResource(R.string.privacy_title))
+            Column(
+                Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                BodyText(stringResource(R.string.privacy_note))
+                BodyText(stringResource(R.string.setting_version, BuildConfig.VERSION_NAME))
+            }
         }
     }
 }
@@ -110,28 +171,57 @@ private fun MinAgeSetting(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-internal fun SettingSwitch(
-    title: String,
-    summary: String,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
+private fun SectionTitle(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
+@Composable
+private fun BodyText(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun ActionRow(title: String, summary: String, onClick: () -> Unit) {
+    Column(
+        Modifier
             .fillMaxWidth()
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f).padding(end = 16.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                summary,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        // The whole row is the toggle target; null avoids a second focus stop for TalkBack.
-        Switch(checked = checked, onCheckedChange = null)
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        BodyText(summary)
     }
+}
+
+@Composable
+private fun ConfirmDialog(
+    text: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm()
+                    onDismiss()
+                },
+            ) { Text(confirmLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }

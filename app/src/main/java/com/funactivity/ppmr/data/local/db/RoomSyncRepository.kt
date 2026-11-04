@@ -24,12 +24,13 @@ class RoomSyncRepository @Inject constructor(
 
     override fun observeFailedCount(): Flow<Int> = dao.observeFailedCount()
 
-    override suspend fun statusOf(identityKey: String): SyncStatus? = dao.find(identityKey)?.status
-
     override suspend fun allIdentityKeys(): Set<String> = dao.allIdentityKeys().toSet()
 
     override suspend fun driveFileIdForContent(contentHash: String): String? =
         dao.driveFileIdForContent(contentHash)
+
+    override suspend fun hasPendingContent(contentHash: String): Boolean =
+        dao.hasPendingContent(contentHash)
 
     override suspend fun enqueue(file: RecordingFile, identityKey: String, contentHash: String?) {
         database.withTransaction {
@@ -100,8 +101,11 @@ class RoomSyncRepository @Inject constructor(
         requeue(it)
     }
 
-    override suspend fun retryAllFailed() {
-        database.withTransaction { dao.findByStatus(SyncStatus.FAILED).forEach { requeue(it) } }
+    override suspend fun retryAllNow() {
+        database.withTransaction {
+            dao.findByStatus(SyncStatus.FAILED).forEach { requeue(it) }
+            dao.clearBackoff()
+        }
     }
 
     override suspend fun forget(identityKey: String) {

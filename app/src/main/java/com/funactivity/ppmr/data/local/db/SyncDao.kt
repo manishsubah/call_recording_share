@@ -43,6 +43,19 @@ interface SyncDao {
 
     @Query(
         """
+        SELECT EXISTS(
+            SELECT 1 FROM synced_files
+            WHERE contentHash = :contentHash AND status IN ('QUEUED', 'UPLOADING')
+        )
+        """,
+    )
+    suspend fun hasPendingContent(contentHash: String): Boolean
+
+    @Query("UPDATE synced_files SET nextAttemptAt = 0 WHERE status = 'QUEUED'")
+    suspend fun clearBackoff()
+
+    @Query(
+        """
         SELECT * FROM synced_files
         WHERE status = 'QUEUED' AND nextAttemptAt <= :now
         ORDER BY nextAttemptAt, lastModified

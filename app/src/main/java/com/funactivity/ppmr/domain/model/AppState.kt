@@ -9,4 +9,5 @@ data class AppState(
     val sourceFolderName: String? = null,
     val lastSuccessfulSyncAt: Long? = null,
     val authRequired: Boolean = false,
+    val folderLostNotified: Boolean = false,
 )

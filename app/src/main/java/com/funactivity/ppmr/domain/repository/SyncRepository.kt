@@ -2,7 +2,6 @@ package com.funactivity.ppmr.domain.repository
 
 import com.funactivity.ppmr.domain.model.RecordingFile
 import com.funactivity.ppmr.domain.model.SyncItem
-import com.funactivity.ppmr.domain.model.SyncStatus
 import com.funactivity.ppmr.domain.model.TrackedFile
 import kotlinx.coroutines.flow.Flow
 
@@ -11,11 +10,13 @@ interface SyncRepository {
     fun observePendingCount(): Flow<Int>
     fun observeFailedCount(): Flow<Int>
 
-    suspend fun statusOf(identityKey: String): SyncStatus?
     suspend fun allIdentityKeys(): Set<String>
 
     /** The Drive file ID of an uploaded file with this content, used to spot renamed copies. */
     suspend fun driveFileIdForContent(contentHash: String): String?
+
+    /** True if a file with this content is queued or uploading right now. */
+    suspend fun hasPendingContent(contentHash: String): Boolean
 
     suspend fun enqueue(file: RecordingFile, identityKey: String, contentHash: String?)
     suspend fun recordAsDuplicate(
@@ -39,7 +40,9 @@ interface SyncRepository {
 
     /** Puts one failed file back in the queue with a fresh set of attempts. */
     suspend fun retry(identityKey: String)
-    suspend fun retryAllFailed()
+
+    /** Requeues failed files and cancels the wait on files in backoff. */
+    suspend fun retryAllNow()
 
     /** Forgets a queued file, e.g. because it changed and will be rediscovered as a new identity. */
     suspend fun forget(identityKey: String)

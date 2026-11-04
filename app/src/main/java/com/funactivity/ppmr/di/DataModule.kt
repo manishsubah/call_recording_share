@@ -6,6 +6,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.funactivity.ppmr.data.auth.GoogleAuthRepository
+import com.funactivity.ppmr.data.files.StreamingContentHasher
+import com.funactivity.ppmr.domain.repository.ContentHasher
+import com.funactivity.ppmr.domain.repository.SyncScheduler
+import com.funactivity.ppmr.domain.usecase.SyncMessages
+import com.funactivity.ppmr.sync.ResourceSyncMessages
+import com.funactivity.ppmr.sync.WorkManagerSyncScheduler
 import com.funactivity.ppmr.data.remote.DriveBaseUrl
 import com.funactivity.ppmr.data.remote.DriveRestRepository
 import com.funactivity.ppmr.domain.repository.AccessTokenProvider
@@ -50,6 +56,15 @@ abstract class DataBindings {
 
     @Binds
     abstract fun bindAccessTokenProvider(impl: GoogleAuthRepository): AccessTokenProvider
+
+    @Binds
+    abstract fun bindContentHasher(impl: StreamingContentHasher): ContentHasher
+
+    @Binds
+    abstract fun bindSyncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler
+
+    @Binds
+    abstract fun bindSyncMessages(impl: ResourceSyncMessages): SyncMessages
 
     @Binds
     abstract fun bindDriveRepository(impl: DriveRestRepository): DriveRepository

@@ -19,6 +19,7 @@ interface SettingsRepository {
     suspend fun setDriveFolderId(id: String?)
     suspend fun setLastSuccessfulSync(timestamp: Long)
     suspend fun setAuthRequired(required: Boolean)
+    suspend fun setFolderLostNotified(notified: Boolean)
 
     /** Records the signed-in account and returns the previously used account, if any. */
     suspend fun setAccount(email: String): String?

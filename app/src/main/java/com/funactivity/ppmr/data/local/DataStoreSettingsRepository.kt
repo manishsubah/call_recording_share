@@ -1,6 +1,7 @@
 package com.funactivity.ppmr.data.local
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -66,6 +67,9 @@ class DataStoreSettingsRepository @Inject constructor(
     override suspend fun setAuthRequired(required: Boolean) =
         put { it[PrefKeys.AUTH_REQUIRED] = required }
 
+    override suspend fun setFolderLostNotified(notified: Boolean) =
+        put { it[PrefKeys.FOLDER_LOST_NOTIFIED] = notified }
+
     override suspend fun setAccount(email: String): String? {
         var previous: String? = null
         dataStore.edit {
@@ -84,9 +88,7 @@ class DataStoreSettingsRepository @Inject constructor(
         it.remove(PrefKeys.AUTH_REQUIRED)
     }
 
-    private suspend inline fun put(
-        crossinline block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit,
-    ) {
+    private suspend inline fun put(crossinline block: (MutablePreferences) -> Unit) {
         dataStore.edit { block(it) }
     }
 }

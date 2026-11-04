@@ -1,8 +1,10 @@
 package com.funactivity.ppmr.domain.usecase
 
+import com.funactivity.ppmr.domain.repository.AuthRepository
 import com.funactivity.ppmr.domain.repository.DriveRepository
 import com.funactivity.ppmr.domain.repository.SettingsRepository
 import com.funactivity.ppmr.domain.repository.SyncRepository
+import com.funactivity.ppmr.domain.repository.SyncScheduler
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
@@ -27,9 +29,28 @@ class EnsureDriveDestinationFolderUseCase @Inject constructor(
 class CompleteSignInUseCase @Inject constructor(
     private val settings: SettingsRepository,
     private val sync: SyncRepository,
+    private val scheduler: SyncScheduler,
 ) {
     suspend operator fun invoke(email: String) {
         val previous = settings.setAccount(email)
         if (previous != null && previous != email) sync.clearAll()
+        scheduler.setAutoSyncEnabled(settings.settings.first().autoSync)
+        scheduler.requestScan(manual = false)
+    }
+}
+
+/** Stops background work and forgets the session. Upload records stay, in case of a return. */
+class SignOutUseCase @Inject constructor(
+    private val auth: AuthRepository,
+    private val settings: SettingsRepository,
+    private val sync: SyncRepository,
+    private val scheduler: SyncScheduler,
+) {
+    suspend operator fun invoke(revokeDriveAccess: Boolean) {
+        scheduler.cancelAll()
+        sync.clearUnfinished()
+        val email = settings.appState.first().accountEmail
+        if (revokeDriveAccess && email != null) auth.disconnect(email) else auth.signOut()
+        settings.clearAccount()
     }
 }

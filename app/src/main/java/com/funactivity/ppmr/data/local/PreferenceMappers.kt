@@ -23,6 +23,7 @@ internal object PrefKeys {
     val SOURCE_FOLDER_NAME = stringPreferencesKey("source_folder_name")
     val LAST_SUCCESSFUL_SYNC = longPreferencesKey("last_successful_sync")
     val AUTH_REQUIRED = booleanPreferencesKey("auth_required")
+    val FOLDER_LOST_NOTIFIED = booleanPreferencesKey("folder_lost_notified")
 }
 
 internal fun Preferences.toAppSettings(): AppSettings {
@@ -44,4 +45,5 @@ internal fun Preferences.toAppState(): AppState = AppState(
     sourceFolderName = this[PrefKeys.SOURCE_FOLDER_NAME],
     lastSuccessfulSyncAt = this[PrefKeys.LAST_SUCCESSFUL_SYNC],
     authRequired = this[PrefKeys.AUTH_REQUIRED] ?: false,
+    folderLostNotified = this[PrefKeys.FOLDER_LOST_NOTIFIED] ?: false,
 )
