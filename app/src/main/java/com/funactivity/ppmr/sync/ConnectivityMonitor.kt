@@ -32,7 +32,9 @@ class ConnectivityMonitor @Inject constructor(
             }
 
             override fun onLost(network: Network) {
-                trySend(current())
+                // Losing the default network means offline. Querying activeNetwork here can still
+                // return the network that is going away.
+                trySend(NetworkState(connected = false, unmetered = false))
             }
         }
         trySend(current())
