@@ -3,6 +3,32 @@
 
     <string name="action_back">Back</string>
 
+    <string name="action_change_folder">Change folder</string>
+    <string name="action_pick_folder">Choose folder</string>
+    <string name="action_show_folder_help">Where are my recordings?</string>
+    <string name="action_close">Close</string>
+
+    <!-- Source folder -->
+    <string name="storage_internal">Internal storage</string>
+    <string name="storage_external">SD card</string>
+    <string name="folder_card_title">Recordings folder</string>
+    <string name="folder_none_selected">No folder selected. Choose the folder where your phone saves call recordings.</string>
+    <string name="folder_permission_lost">Access to this folder was lost. Please choose it again.</string>
+    <string name="folder_read_failed">The folder could not be read right now. If it is on an SD card, check that the card is inserted.</string>
+    <string name="folder_grant_failed">Android did not allow lasting access to that folder. Please try a different one.</string>
+    <string name="folder_no_recordings">No recordings found in this folder yet.</string>
+    <plurals name="folder_recording_count">
+        <item quantity="one">%1$d recording found</item>
+        <item quantity="other">%1$d recordings found</item>
+    </plurals>
+    <string name="folder_help_title">Where to find call recordings</string>
+    <string name="folder_help_intro">The location depends on your phone and recorder app. Common places are:</string>
+    <string name="folder_help_samsung">Samsung: Recordings/Call, or Call in older versions</string>
+    <string name="folder_help_xiaomi">Xiaomi / Redmi / POCO: MIUI/sound_recorder/call_rec</string>
+    <string name="folder_help_pixel">Pixel: Recorder, or Music/Recordings/Call Recordings when using the Phone app\'s call recording</string>
+    <string name="folder_help_oneplus">OnePlus / OPPO / realme: Music/Recordings/Call Recordings, or Recordings/Call</string>
+    <string name="folder_help_outro">Not there? Make a short test call, then browse your Music and Recordings folders for the newest file. Android does not let apps read another app\'s private folder or the top level of storage, so a recorder that saves there has to be changed to save somewhere else.</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="setting_wifi_only">Upload on Wi-Fi only</string>

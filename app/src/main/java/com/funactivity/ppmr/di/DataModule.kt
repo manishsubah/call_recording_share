@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.funactivity.ppmr.data.local.DataStoreSettingsRepository
+import com.funactivity.ppmr.data.files.SafRecordingFolderRepository
+import com.funactivity.ppmr.domain.repository.RecordingFolderRepository
 import com.funactivity.ppmr.domain.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
@@ -21,6 +23,11 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 abstract class DataBindings {
     @Binds
     abstract fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
+
+    @Binds
+    abstract fun bindRecordingFolderRepository(
+        impl: SafRecordingFolderRepository,
+    ): RecordingFolderRepository
 }
 
 @Module
