@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">fun activity</string>
+
+    <string name="action_back">Back</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="setting_wifi_only">Upload on Wi-Fi only</string>
+    <string name="setting_wifi_only_summary">Turn off to also upload using mobile data.</string>
+    <string name="setting_auto_sync">Auto-sync</string>
+    <string name="setting_auto_sync_summary">Upload new recordings automatically. Sync now always works.</string>
+    <string name="setting_subfolders">Include subfolders</string>
+    <string name="setting_subfolders_summary">Also look inside folders within the selected folder.</string>
+    <string name="setting_success_notifications">Success notifications</string>
+    <string name="setting_success_notifications_summary">Notify after each file is uploaded.</string>
+    <string name="setting_min_age">Minimum file age</string>
+    <string name="setting_min_age_summary">Wait this long after a file last changed, so unfinished recordings are not uploaded.</string>
+    <string name="setting_min_age_value">%1$ds</string>
 </resources>
