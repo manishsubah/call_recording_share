@@ -93,8 +93,8 @@ warning; choose **Continue**.
 
 ## Testing with sample audio
 
-Make a test folder and add a sample file. The file must be real enough for you to recognize in Drive,
-but its content does not matter to the app.
+Make a test folder and add a sample file. The app does not play or inspect the audio, so random bytes
+with an audio extension are enough for a test.
 
 ```bash
 adb shell mkdir -p /sdcard/Music/CallTest
