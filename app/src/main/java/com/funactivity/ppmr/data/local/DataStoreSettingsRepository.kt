@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import com.funactivity.ppmr.domain.model.AppSettings
 import com.funactivity.ppmr.domain.model.AppState
+import com.funactivity.ppmr.domain.model.SourceFolder
 import com.funactivity.ppmr.domain.repository.SettingsRepository
 import java.io.IOException
 import javax.inject.Inject
@@ -52,9 +53,18 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override suspend fun setOnboardingDone() = put { it[PrefKeys.ONBOARDING_DONE] = true }
 
-    override suspend fun setSourceFolder(treeUri: String, displayName: String) = put {
-        it[PrefKeys.SOURCE_TREE_URI] = treeUri
-        it[PrefKeys.SOURCE_FOLDER_NAME] = displayName
+    override suspend fun addSourceFolder(folder: SourceFolder) = updateSourceFolders { current ->
+        if (current.any { it.treeUri == folder.treeUri }) current else current + folder
+    }
+
+    override suspend fun removeSourceFolder(treeUri: String) = updateSourceFolders { current ->
+        current.filterNot { it.treeUri == treeUri }
+    }
+
+    private suspend fun updateSourceFolders(change: (List<SourceFolder>) -> List<SourceFolder>) = put {
+        it[PrefKeys.SOURCE_FOLDERS] = encodeSourceFolders(change(it.toAppState().sourceFolders))
+        it.remove(PrefKeys.SOURCE_TREE_URI)
+        it.remove(PrefKeys.SOURCE_FOLDER_NAME)
     }
 
     override suspend fun setDriveFolderId(id: String?) = put {
@@ -88,7 +98,7 @@ class DataStoreSettingsRepository @Inject constructor(
         it.remove(PrefKeys.AUTH_REQUIRED)
     }
 
-    private suspend inline fun put(crossinline block: (MutablePreferences) -> Unit) {
+    private suspend fun put(block: (MutablePreferences) -> Unit) {
         dataStore.edit { block(it) }
     }
 }

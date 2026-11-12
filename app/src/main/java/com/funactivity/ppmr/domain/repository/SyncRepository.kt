@@ -12,6 +12,9 @@ interface SyncRepository {
 
     suspend fun allIdentityKeys(): Set<String>
 
+    /** Source URIs of files not uploaded yet, including failed ones that may be retried. */
+    suspend fun unfinishedDocumentUris(): Set<String>
+
     /** The Drive file ID of an uploaded file with this content, used to spot renamed copies. */
     suspend fun driveFileIdForContent(contentHash: String): String?
 
@@ -47,7 +50,10 @@ interface SyncRepository {
     /** Forgets a queued file, e.g. because it changed and will be rediscovered as a new identity. */
     suspend fun forget(identityKey: String)
 
-    /** Forgets everything not yet uploaded. Used when the source folder changes. */
+    /**
+     * Forgets everything not yet uploaded, except shared copies, which belong to no folder.
+     * Used when a source folder is removed or the user signs out.
+     */
     suspend fun clearUnfinished()
 
     /** Clears the visible history and failed rows. Uploaded records stay so nothing re-uploads. */

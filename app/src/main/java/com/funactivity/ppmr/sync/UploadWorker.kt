@@ -13,6 +13,7 @@ import com.funactivity.ppmr.domain.repository.SettingsRepository
 import com.funactivity.ppmr.domain.repository.SyncRepository
 import com.funactivity.ppmr.domain.repository.SyncScheduler
 import com.funactivity.ppmr.domain.sync.RetryPolicy
+import com.funactivity.ppmr.domain.usecase.CleanUpSharedCopiesUseCase
 import com.funactivity.ppmr.domain.usecase.EnsureDriveDestinationFolderUseCase
 import com.funactivity.ppmr.domain.usecase.SyncMessages
 import com.funactivity.ppmr.domain.usecase.UploadOutcome
@@ -42,6 +43,7 @@ class UploadWorker @AssistedInject constructor(
     private val settings: SettingsRepository,
     private val ensureDriveFolder: EnsureDriveDestinationFolderUseCase,
     private val uploadRecording: UploadRecordingUseCase,
+    private val cleanUpSharedCopies: CleanUpSharedCopiesUseCase,
     private val scheduler: SyncScheduler,
     private val connectivity: ConnectivityMonitor,
     private val tracker: SyncProgressTracker,
@@ -63,6 +65,7 @@ class UploadWorker @AssistedInject constructor(
                 processQueue()
                 foreground.cancel()
             }
+            cleanUpSharedCopies()
             scheduleFollowUp()
         } finally {
             // Also runs when WorkManager stops this worker, e.g. because the network went away.

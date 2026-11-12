@@ -2,4 +2,9 @@
 <resources>
 
     <style name="Theme.FunActivity" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- The share receiver shows only a toast, so its window is fully transparent. -->
+    <style name="Theme.FunActivity.Invisible" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

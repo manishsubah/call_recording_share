@@ -10,7 +10,18 @@ object AudioFormats {
         "3gp" to "audio/3gpp",
         "aac" to "audio/aac",
         "ogg" to "audio/ogg",
+        "opus" to "audio/ogg",
     )
+
+    /** The usual extension for an audio MIME type, used to name shared files that have none. */
+    fun extensionFor(mimeType: String?): String? = when (mimeType?.lowercase()?.substringBefore(';')) {
+        null -> null
+        "audio/mp4", "audio/m4a", "audio/x-m4a", "audio/aac-adts" -> "m4a"
+        "audio/x-wav", "audio/wave", "audio/vnd.wave" -> "wav"
+        "audio/3gpp", "video/3gpp" -> "3gp"
+        "application/ogg", "audio/opus" -> "ogg"
+        else -> MIME_BY_EXTENSION.entries.firstOrNull { it.value == mimeType.lowercase() }?.key
+    }
 
     fun extensionOf(fileName: String): String =
         fileName.substringAfterLast('.', missingDelimiterValue = "").lowercase()

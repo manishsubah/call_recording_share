@@ -101,9 +101,10 @@ fun HomeScreen(
                         onSignOut = viewModel::signOut,
                     )
                     SourceFolderCard(
-                        folderName = state.appState.sourceFolderName,
+                        folders = state.appState.sourceFolders,
                         status = state.folderStatus,
                         onPick = pickFolder,
+                        onRemove = viewModel::onFolderRemoved,
                         onHelp = { showFolderHelp = true },
                     )
                     DestinationCard(

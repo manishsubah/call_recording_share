@@ -42,7 +42,7 @@ class SyncRulesTest {
 
     @Test
     fun `all required extensions are supported in any case`() {
-        listOf("m4a", "mp3", "wav", "amr", "3gp", "aac", "ogg", "M4A", "Mp3").forEach {
+        listOf("m4a", "mp3", "wav", "amr", "3gp", "aac", "ogg", "opus", "M4A", "Mp3").forEach {
             assertTrue(it, AudioFormats.isSupported("call.$it"))
         }
     }

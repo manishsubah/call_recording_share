@@ -26,6 +26,8 @@ class RoomSyncRepository @Inject constructor(
 
     override suspend fun allIdentityKeys(): Set<String> = dao.allIdentityKeys().toSet()
 
+    override suspend fun unfinishedDocumentUris(): Set<String> = dao.unfinishedDocumentUris().toSet()
+
     override suspend fun driveFileIdForContent(contentHash: String): String? =
         dao.driveFileIdForContent(contentHash)
 
@@ -118,7 +120,7 @@ class RoomSyncRepository @Inject constructor(
     override suspend fun clearUnfinished() {
         database.withTransaction {
             dao.deleteUnfinishedFiles()
-            dao.deleteUnfinishedEvents()
+            dao.deleteOrphanedEvents()
         }
     }
 

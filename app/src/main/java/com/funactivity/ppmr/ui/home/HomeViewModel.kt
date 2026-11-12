@@ -10,10 +10,11 @@ import com.funactivity.ppmr.domain.model.SyncItem
 import com.funactivity.ppmr.domain.repository.RecordingFolderRepository
 import com.funactivity.ppmr.domain.repository.SettingsRepository
 import com.funactivity.ppmr.domain.repository.SyncRepository
+import com.funactivity.ppmr.domain.usecase.AddSourceFolderUseCase
 import com.funactivity.ppmr.domain.usecase.ManualSyncUseCase
 import com.funactivity.ppmr.domain.usecase.ObserveSyncEventsUseCase
+import com.funactivity.ppmr.domain.usecase.RemoveSourceFolderUseCase
 import com.funactivity.ppmr.domain.usecase.RetryUploadUseCase
-import com.funactivity.ppmr.domain.usecase.SelectSourceFolderUseCase
 import com.funactivity.ppmr.domain.usecase.SignOutUseCase
 import com.funactivity.ppmr.sync.ConnectivityMonitor
 import com.funactivity.ppmr.sync.NetworkState
@@ -46,8 +47,8 @@ data class HomeUiState(
 ) {
     val signedIn: Boolean get() = appState.accountEmail != null
     val canSync: Boolean
-        get() = signedIn && !appState.authRequired && appState.sourceTreeUri != null &&
-            folderStatus !is FolderStatus.PermissionLost
+        get() = signedIn && !appState.authRequired && appState.sourceFolders.isNotEmpty() &&
+            (folderStatus as? FolderStatus.PermissionLost)?.allFolders != true
 }
 
 private data class Counts(val pending: Int, val failed: Int)
@@ -56,7 +57,8 @@ private data class Counts(val pending: Int, val failed: Int)
 class HomeViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val folders: RecordingFolderRepository,
-    private val selectSourceFolder: SelectSourceFolderUseCase,
+    private val addSourceFolder: AddSourceFolderUseCase,
+    private val removeSourceFolder: RemoveSourceFolderUseCase,
     private val manualSync: ManualSyncUseCase,
     private val retryUpload: RetryUploadUseCase,
     private val signOutUseCase: SignOutUseCase,
@@ -107,23 +109,37 @@ class HomeViewModel @Inject constructor(
 
     fun refreshFolder() {
         viewModelScope.launch {
-            val treeUri = settingsRepository.appState.first().sourceTreeUri
-            if (treeUri == null) {
+            val sourceFolders = settingsRepository.appState.first().sourceFolders
+            if (sourceFolders.isEmpty()) {
                 folderStatus.value = FolderStatus.NotSelected
                 return@launch
             }
             val includeSubfolders = settingsRepository.settings.first().includeSubfolders
-            folderStatus.value = when (val listing = folders.listRecordings(treeUri, includeSubfolders)) {
-                is FolderListing.Success -> FolderStatus.Ready(listing.files.size)
-                FolderListing.PermissionLost -> FolderStatus.PermissionLost
-                is FolderListing.Failed -> FolderStatus.ReadFailed
+            val listings = sourceFolders.map { folders.listRecordings(it.treeUri, includeSubfolders) }
+            val lost = listings.count { it is FolderListing.PermissionLost }
+            folderStatus.value = when {
+                lost > 0 -> FolderStatus.PermissionLost(allFolders = lost == listings.size)
+                listings.any { it is FolderListing.Failed } -> FolderStatus.ReadFailed
+                else -> FolderStatus.Ready(
+                    listings.filterIsInstance<FolderListing.Success>()
+                        .flatMap { it.files }
+                        .distinctBy { Triple(it.displayName, it.size, it.lastModified) }
+                        .size,
+                )
             }
         }
     }
 
     fun onFolderPicked(uri: Uri) {
         viewModelScope.launch {
-            if (!selectSourceFolder(uri.toString())) folderGrantFailures.send(Unit)
+            if (!addSourceFolder(uri.toString())) folderGrantFailures.send(Unit)
+            refreshFolder()
+        }
+    }
+
+    fun onFolderRemoved(treeUri: String) {
+        viewModelScope.launch {
+            removeSourceFolder(treeUri)
             refreshFolder()
         }
     }

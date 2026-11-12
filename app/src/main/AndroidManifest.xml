@@ -31,6 +31,27 @@
             </intent-filter>
         </activity>
 
+        <!-- Share target for recordings another app keeps private, e.g. the phone app. -->
+        <activity
+            android:name=".ui.share.ShareReceiverActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/share_target_label"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.FunActivity.Invisible">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>
+        </activity>
+
         <!-- WorkManager runs uploads as a foreground service only while a file is uploading. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"

@@ -4,6 +4,7 @@ import com.funactivity.ppmr.domain.model.AppSettings
 import com.funactivity.ppmr.domain.model.AppState
 import com.funactivity.ppmr.domain.model.FolderListing
 import com.funactivity.ppmr.domain.model.RecordingFile
+import com.funactivity.ppmr.domain.model.SourceFolder
 import com.funactivity.ppmr.domain.model.SyncItem
 import com.funactivity.ppmr.domain.model.TrackedFile
 import com.funactivity.ppmr.domain.repository.ContentHasher
@@ -26,7 +27,7 @@ class EnqueueNewRecordingsTest {
     private val folder = FakeFolder()
     private val sync = FakeSync()
     private val hashes = mutableMapOf<String, String?>()
-    private var state = AppState(accountEmail = "me@example.com", sourceTreeUri = "content://tree")
+    private var state = AppState(accountEmail = "me@example.com", sourceFolders = listOf(SourceFolder(TREE, "Tree")))
 
     private fun useCase() = EnqueueNewRecordingsUseCase(
         folders = folder,
@@ -103,100 +104,51 @@ class EnqueueNewRecordingsTest {
     }
 
     @Test
+    fun `every chosen folder is scanned`() = runTest {
+        useTwoFolders()
+        folder.listingsByTree["content://a"] = FolderListing.Success(listOf(recording("a.m4a")))
+        folder.listingsByTree["content://b"] = FolderListing.Success(listOf(recording("b.opus")))
+        assertEquals(ScanResult.Completed(2, null), useCase()(NOW))
+    }
+
+    @Test
+    fun `a lost folder does not hold up the others but is reported`() = runTest {
+        useTwoFolders()
+        folder.listingsByTree["content://a"] = FolderListing.PermissionLost
+        folder.listingsByTree["content://b"] = FolderListing.Success(listOf(recording("b.opus")))
+        assertEquals(ScanResult.Completed(1, null, someFoldersLost = true), useCase()(NOW))
+    }
+
+    @Test
+    fun `losing every folder is reported as lost access`() = runTest {
+        useTwoFolders()
+        folder.listingsByTree["content://a"] = FolderListing.PermissionLost
+        folder.listingsByTree["content://b"] = FolderListing.PermissionLost
+        assertEquals(ScanResult.FolderAccessLost, useCase()(NOW))
+    }
+
+    @Test
+    fun `a file reached through overlapping folders queues once`() = runTest {
+        useTwoFolders()
+        // No content hash, as for a large file, so only the identity can catch the overlap.
+        folder.listingsByTree["content://a"] = FolderListing.Success(listOf(recording("a.m4a")))
+        folder.listingsByTree["content://b"] = FolderListing.Success(listOf(recording("a.m4a")))
+        assertEquals(ScanResult.Completed(1, null), useCase()(NOW))
+    }
+
+    private fun useTwoFolders() {
+        state = state.copy(
+            sourceFolders = listOf(SourceFolder("content://a", "A"), SourceFolder("content://b", "B")),
+        )
+    }
+
+    @Test
     fun `nothing is scanned without an account or a folder`() = runTest {
-        state = AppState(sourceTreeUri = "content://tree")
+        state = AppState(sourceFolders = listOf(SourceFolder(TREE, "Tree")))
         assertEquals(ScanResult.NothingToScan, useCase()(NOW))
         state = AppState(accountEmail = "me@example.com")
         assertEquals(ScanResult.NothingToScan, useCase()(NOW))
     }
 }
 
-private class FakeFolder : RecordingFolderRepository {
-    var files: List<RecordingFile> = emptyList()
-    var listing: FolderListing? = null
-
-    override suspend fun listRecordings(treeUri: String, includeSubfolders: Boolean) =
-        listing ?: FolderListing.Success(files)
-
-    override fun takePermission(treeUri: String) = true
-    override fun releasePermission(treeUri: String) = Unit
-    override fun hasPermission(treeUri: String) = true
-    override fun displayNameOf(treeUri: String) = treeUri
-    override suspend fun stat(documentUri: String) = error("not used")
-    override fun open(documentUri: String) = error("not used")
-}
-
-private class FakeSync : SyncRepository {
-    private class Row(val name: String, val hash: String?, var uploaded: Boolean)
-
-    private val rows = mutableMapOf<String, Row>()
-    val duplicates = mutableListOf<String>()
-    val queued: List<Any> get() = rows.values.filter { !it.uploaded }
-
-    fun markAllUploaded() = rows.values.forEach { it.uploaded = true }
-
-    override suspend fun allIdentityKeys() = rows.keys.toSet()
-    override suspend fun driveFileIdForContent(contentHash: String) =
-        rows.values.firstOrNull { it.hash == contentHash && it.uploaded }?.let { "drive-id" }
-    override suspend fun hasPendingContent(contentHash: String) =
-        rows.values.any { it.hash == contentHash && !it.uploaded }
-    override suspend fun enqueue(file: RecordingFile, identityKey: String, contentHash: String?) {
-        rows[identityKey] = Row(file.displayName, contentHash, uploaded = false)
-    }
-    override suspend fun recordAsDuplicate(
-        file: RecordingFile,
-        identityKey: String,
-        contentHash: String?,
-        driveFileId: String,
-        message: String,
-    ) {
-        rows[identityKey] = Row(file.displayName, contentHash, uploaded = true)
-        duplicates += file.displayName
-    }
-
-    override fun observeRecentActivity(limit: Int): Flow<List<SyncItem>> = flowOf(emptyList())
-    override fun observePendingCount(): Flow<Int> = flowOf(0)
-    override fun observeFailedCount(): Flow<Int> = flowOf(0)
-    override suspend fun nextDue(now: Long): TrackedFile? = null
-    override suspend fun earliestPendingAttempt(): Long? = null
-    override suspend fun markUploading(identityKey: String) = Unit
-    override suspend fun markUploaded(identityKey: String, driveFileId: String, message: String?) = Unit
-    override suspend fun scheduleRetry(identityKey: String, attempts: Int, nextAttemptAt: Long, message: String) = Unit
-    override suspend fun markFailed(identityKey: String, attempts: Int, message: String) = Unit
-    override suspend fun resetInterrupted() = Unit
-    override suspend fun retry(identityKey: String) = Unit
-    override suspend fun retryAllNow() = Unit
-    override suspend fun forget(identityKey: String) = Unit
-    override suspend fun clearUnfinished() = Unit
-    override suspend fun clearHistory() = Unit
-    override suspend fun clearAll() = Unit
-}
-
-private class FakeSettings(state: AppState) : SettingsRepository {
-    override val settings = MutableStateFlow(AppSettings())
-    override val appState = MutableStateFlow(state)
-    override suspend fun setWifiOnly(enabled: Boolean) = Unit
-    override suspend fun setAutoSync(enabled: Boolean) = Unit
-    override suspend fun setIncludeSubfolders(enabled: Boolean) = Unit
-    override suspend fun setSuccessNotifications(enabled: Boolean) = Unit
-    override suspend fun setMinFileAgeSeconds(seconds: Int) = Unit
-    override suspend fun setOnboardingDone() = Unit
-    override suspend fun setSourceFolder(treeUri: String, displayName: String) = Unit
-    override suspend fun setDriveFolderId(id: String?) = Unit
-    override suspend fun setLastSuccessfulSync(timestamp: Long) = Unit
-    override suspend fun setAuthRequired(required: Boolean) = Unit
-    override suspend fun setFolderLostNotified(notified: Boolean) = Unit
-    override suspend fun setAccount(email: String): String? = null
-    override suspend fun clearAccount() = Unit
-}
-
-private object FakeMessages : SyncMessages {
-    override fun duplicateContent() = "duplicate"
-    override fun alreadyInDrive() = "already"
-    override fun fileMissing() = "missing"
-    override fun folderAccessLost() = "lost"
-    override fun quotaExceeded() = "quota"
-    override fun retrying(attempt: Int, maxAttempts: Int, reason: String) = "retry"
-    override fun gaveUp(reason: String) = "gave up"
-    override fun networkProblem() = "network"
-}
+private const val TREE = "content://tree"

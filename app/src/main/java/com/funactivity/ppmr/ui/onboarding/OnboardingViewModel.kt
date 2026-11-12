@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.funactivity.ppmr.domain.model.AppState
 import com.funactivity.ppmr.domain.repository.SettingsRepository
-import com.funactivity.ppmr.domain.usecase.SelectSourceFolderUseCase
+import com.funactivity.ppmr.domain.usecase.AddSourceFolderUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val settings: SettingsRepository,
-    private val selectSourceFolder: SelectSourceFolderUseCase,
+    private val addSourceFolder: AddSourceFolderUseCase,
 ) : ViewModel() {
     val appState: StateFlow<AppState> = settings.appState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppState())
@@ -27,7 +27,7 @@ class OnboardingViewModel @Inject constructor(
     val folderGrantFailed: StateFlow<Boolean> = _folderGrantFailed.asStateFlow()
 
     fun onFolderPicked(uri: Uri) {
-        viewModelScope.launch { _folderGrantFailed.value = !selectSourceFolder(uri.toString()) }
+        viewModelScope.launch { _folderGrantFailed.value = !addSourceFolder(uri.toString()) }
     }
 
     fun finish(onDone: () -> Unit) {

@@ -30,6 +30,7 @@ import timber.log.Timber
 @Singleton
 class SafRecordingFolderRepository @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val sharedCopies: FileSharedRecordingStore,
 ) : RecordingFolderRepository {
 
     private val resolver get() = context.contentResolver
@@ -112,6 +113,10 @@ class SafRecordingFolderRepository @Inject constructor(
     }
 
     override suspend fun stat(documentUri: String): RecordingFile? = withContext(Dispatchers.IO) {
+        if (sharedCopies.owns(documentUri)) {
+            // Name and type are not stored on disk; the caller compares only size and time.
+            return@withContext sharedCopies.stat(documentUri, displayName = "", mimeType = "")
+        }
         val uri = documentUri.toUri()
         try {
             resolver.query(uri, PROJECTION, null, null, null)?.use { cursor ->
@@ -127,7 +132,8 @@ class SafRecordingFolderRepository @Inject constructor(
     }
 
     override fun open(documentUri: String): InputStream =
-        resolver.openInputStream(documentUri.toUri())
+        if (sharedCopies.owns(documentUri)) sharedCopies.open(documentUri)
+        else resolver.openInputStream(documentUri.toUri())
             ?: throw FileNotFoundException("Provider returned no stream")
 
     /** Returns false when the provider gave no cursor, meaning the folder is unreadable. */

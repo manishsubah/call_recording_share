@@ -67,7 +67,7 @@ fun OnboardingScreen(
         when (step) {
             1 -> SignInStep(appState.accountEmail, onNext = { step = 2 })
             2 -> FolderStep(
-                folderName = appState.sourceFolderName,
+                folderName = appState.sourceFolders.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.name },
                 grantFailed = folderGrantFailed,
                 onPicked = viewModel::onFolderPicked,
                 onNext = { step = 3 },
@@ -117,7 +117,7 @@ private fun ColumnScope.FolderStep(
         if (folderName == null) {
             Button(onClick = pickFolder) { Text(stringResource(R.string.action_pick_folder)) }
         } else {
-            OutlinedButton(onClick = pickFolder) { Text(stringResource(R.string.action_change_folder)) }
+            OutlinedButton(onClick = pickFolder) { Text(stringResource(R.string.action_add_folder)) }
         }
     }
     TextButton(onClick = { showHelp = true }) { Text(stringResource(R.string.action_show_folder_help)) }

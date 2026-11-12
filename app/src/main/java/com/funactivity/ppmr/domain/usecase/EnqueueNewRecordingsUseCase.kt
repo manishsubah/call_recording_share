@@ -13,14 +13,21 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
 sealed interface ScanResult {
-    /** [nextReadyAt] is when a file that was too new can be checked again, if there is one. */
-    data class Completed(val enqueued: Int, val nextReadyAt: Long?) : ScanResult
+    /**
+     * [nextReadyAt] is when a file that was too new can be checked again, if there is one.
+     * [someFoldersLost] means the folders still readable were scanned but others were not.
+     */
+    data class Completed(
+        val enqueued: Int,
+        val nextReadyAt: Long?,
+        val someFoldersLost: Boolean = false,
+    ) : ScanResult
     data object NothingToScan : ScanResult
     data object FolderAccessLost : ScanResult
     data class Failed(val reason: String) : ScanResult
 }
 
-/** Compares the folder with the upload records and queues whatever is new. */
+/** Compares the chosen folders with the upload records and queues whatever is new. */
 class EnqueueNewRecordingsUseCase @Inject constructor(
     private val folders: RecordingFolderRepository,
     private val settings: SettingsRepository,
@@ -30,18 +37,20 @@ class EnqueueNewRecordingsUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(now: Long = System.currentTimeMillis()): ScanResult {
         val state = settings.appState.first()
-        val treeUri = state.sourceTreeUri
-        if (treeUri == null || state.accountEmail == null) return ScanResult.NothingToScan
+        if (state.sourceFolders.isEmpty() || state.accountEmail == null) return ScanResult.NothingToScan
 
         val config = settings.settings.first()
-        val listing = folders.listRecordings(treeUri, config.includeSubfolders)
-        val files = when (listing) {
-            is FolderListing.Success -> listing.files
-            FolderListing.PermissionLost -> return ScanResult.FolderAccessLost
-            is FolderListing.Failed -> return ScanResult.Failed(listing.reason)
+        val listings = state.sourceFolders.map { folders.listRecordings(it.treeUri, config.includeSubfolders) }
+        val files = listings.filterIsInstance<FolderListing.Success>().flatMap { it.files }
+        val lost = listings.count { it is FolderListing.PermissionLost }
+        // One unreadable folder must not hold up the others.
+        if (listings.none { it is FolderListing.Success }) {
+            if (lost > 0) return ScanResult.FolderAccessLost
+            return ScanResult.Failed(listings.filterIsInstance<FolderListing.Failed>().first().reason)
         }
 
-        val known = sync.allIdentityKeys()
+        // Tracks this scan too, so a file reached through two overlapping folders queues once.
+        val known = sync.allIdentityKeys().toMutableSet()
         var enqueued = 0
         var nextReadyAt: Long? = null
         for (file in files) {
@@ -51,11 +60,11 @@ class EnqueueNewRecordingsUseCase @Inject constructor(
                     nextReadyAt = minOf(nextReadyAt ?: decision.readyAt, decision.readyAt)
                 CandidateDecision.Eligible -> {
                     val identity = FileIdentity.keyOf(file.displayName, file.size, file.lastModified)
-                    if (identity !in known && consider(file, identity)) enqueued++
+                    if (known.add(identity) && consider(file, identity)) enqueued++
                 }
             }
         }
-        return ScanResult.Completed(enqueued, nextReadyAt)
+        return ScanResult.Completed(enqueued, nextReadyAt, someFoldersLost = lost > 0)
     }
 
     /** Returns true if the file was queued. A renamed copy of known content is not re-uploaded. */

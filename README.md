@@ -1,6 +1,6 @@
 # fun activity
 
-An Android app that uploads new call recordings from a folder you choose to a **Call Recordings**
+An Android app that uploads new call recordings from the folders you choose to a **Call Recordings**
 folder in your own Google Drive. It does not record calls. It has no server of its own and no
 analytics, and it needs no root.
 
@@ -88,7 +88,7 @@ and a Google account.
 ### 7. First run
 
 The app walks you through three steps: sign in with the test user from step 3, pick your recordings
-folder, and finish. While the consent screen is in Testing mode, Google shows an "unverified app"
+folder, and finish. Add more folders later with **Add folder** on the home screen. While the consent screen is in Testing mode, Google shows an "unverified app"
 warning; choose **Continue**.
 
 ## Testing with sample audio
@@ -194,6 +194,14 @@ app/src/main/java/com/funactivity/ppmr/
   design, so point it at a shared folder if it allows that.
 - **`.3gp` detection.** Android may index `.3gp` as video, which the audio trigger does not watch. These
   files are still found by the periodic scan and **Sync now**.
+- **WhatsApp audio.** It can be added as a folder at `Android/media/com.whatsapp/WhatsApp/Media`, with
+  **Include subfolders** on for voice notes. It can include other people's messages, so add it only
+  if you want them in Drive.
+- **Phone apps that keep recordings private.** Google's Phone app saves call recordings inside its own
+  storage, which no folder can reach. Share a recording from the call history and pick **Upload to
+  Drive**. The app copies it into private storage, queues it like any other file, and deletes the
+  copy once it is in Drive. This is one share per call, not automatic.
+- **Files with the same name, size and modified time in two folders count as one file.**
 - **Files deleted from Drive stay deleted.** The app remembers what it uploaded, so it does not put
   back a file you removed from Drive.
 - **Switching Google accounts** clears the upload records, so recordings still in the folder upload

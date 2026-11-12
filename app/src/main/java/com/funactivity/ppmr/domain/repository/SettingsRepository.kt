@@ -2,6 +2,7 @@ package com.funactivity.ppmr.domain.repository
 
 import com.funactivity.ppmr.domain.model.AppSettings
 import com.funactivity.ppmr.domain.model.AppState
+import com.funactivity.ppmr.domain.model.SourceFolder
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
@@ -15,7 +16,8 @@ interface SettingsRepository {
     suspend fun setMinFileAgeSeconds(seconds: Int)
 
     suspend fun setOnboardingDone()
-    suspend fun setSourceFolder(treeUri: String, displayName: String)
+    suspend fun addSourceFolder(folder: SourceFolder)
+    suspend fun removeSourceFolder(treeUri: String)
     suspend fun setDriveFolderId(id: String?)
     suspend fun setLastSuccessfulSync(timestamp: Long)
     suspend fun setAuthRequired(required: Boolean)

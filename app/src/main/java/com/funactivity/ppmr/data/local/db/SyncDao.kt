@@ -32,6 +32,9 @@ interface SyncDao {
     @Query("SELECT identityKey FROM synced_files")
     suspend fun allIdentityKeys(): List<String>
 
+    @Query("SELECT documentUri FROM synced_files WHERE status != 'UPLOADED'")
+    suspend fun unfinishedDocumentUris(): List<String>
+
     @Query(
         """
         SELECT driveFileId FROM synced_files
@@ -100,7 +103,8 @@ interface SyncDao {
     @Query("DELETE FROM synced_files WHERE identityKey = :identityKey")
     suspend fun deleteFile(identityKey: String)
 
-    @Query("DELETE FROM synced_files WHERE status != 'UPLOADED'")
+    /** Shared copies (`file:` URIs) stay queued: they do not depend on any folder. */
+    @Query("DELETE FROM synced_files WHERE status != 'UPLOADED' AND documentUri NOT LIKE 'file:%'")
     suspend fun deleteUnfinishedFiles()
 
     @Query("DELETE FROM synced_files WHERE status = 'FAILED'")
@@ -112,10 +116,10 @@ interface SyncDao {
     @Query(
         """
         DELETE FROM sync_events
-        WHERE identityKey NOT IN (SELECT identityKey FROM synced_files WHERE status = 'UPLOADED')
+        WHERE identityKey NOT IN (SELECT identityKey FROM synced_files)
         """,
     )
-    suspend fun deleteUnfinishedEvents()
+    suspend fun deleteOrphanedEvents()
 
     @Query("DELETE FROM sync_events WHERE identityKey = :identityKey")
     suspend fun deleteEventsFor(identityKey: String)

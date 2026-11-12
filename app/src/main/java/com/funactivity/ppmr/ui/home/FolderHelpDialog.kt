@@ -28,6 +28,7 @@ fun FolderHelpDialog(onDismiss: () -> Unit) {
                 Text(stringResource(R.string.folder_help_xiaomi))
                 Text(stringResource(R.string.folder_help_pixel))
                 Text(stringResource(R.string.folder_help_oneplus))
+                Text(stringResource(R.string.folder_help_whatsapp))
                 Text(stringResource(R.string.folder_help_outro))
             }
         },

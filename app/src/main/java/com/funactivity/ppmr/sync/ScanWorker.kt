@@ -48,6 +48,7 @@ class ScanWorker @AssistedInject constructor(
             when (val result = enqueueNewRecordings()) {
                 is ScanResult.Completed -> {
                     Timber.d("Scan queued %d file(s)", result.enqueued)
+                    if (result.someFoldersLost) notifyFolderLostOnce()
                     result.nextReadyAt?.let {
                         scheduler.scheduleScan(it - System.currentTimeMillis(), manual)
                     }

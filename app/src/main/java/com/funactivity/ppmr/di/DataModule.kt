@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.funactivity.ppmr.data.auth.GoogleAuthRepository
+import com.funactivity.ppmr.data.files.FileSharedRecordingStore
 import com.funactivity.ppmr.data.files.StreamingContentHasher
+import com.funactivity.ppmr.domain.repository.SharedRecordingStore
 import com.funactivity.ppmr.domain.repository.ContentHasher
 import com.funactivity.ppmr.domain.repository.SyncScheduler
 import com.funactivity.ppmr.domain.usecase.SyncMessages
@@ -56,6 +58,9 @@ abstract class DataBindings {
 
     @Binds
     abstract fun bindAccessTokenProvider(impl: GoogleAuthRepository): AccessTokenProvider
+
+    @Binds
+    abstract fun bindSharedRecordingStore(impl: FileSharedRecordingStore): SharedRecordingStore
 
     @Binds
     abstract fun bindContentHasher(impl: StreamingContentHasher): ContentHasher
